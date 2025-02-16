@@ -1,4 +1,4 @@
-FROM python:3.13
+FROM python:3.12
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -9,8 +9,8 @@ COPY requirements.txt requirements.txt
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY src/main.py main.py
+COPY src/* .
 
-USER 10005
+USER 1000
 
 ENTRYPOINT ["python3", "main.py"]

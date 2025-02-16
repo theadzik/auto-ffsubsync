@@ -16,11 +16,14 @@ VIDEO_FORMATS = ["mkv", "mp4", ]
 def get_file_pairs():
     for sub_file in glob.iglob(configuration.root_dir + '/**/*.pol.srt', recursive=True):
         logger.debug(f"Found sub file: {os.path.basename(sub_file)}")
-        base_name = ".".join(sub_file.split(".")[0:-2])
-        for video_file in glob.iglob(base_name + "*"):
+        if os.path.isfile(rename_subtitles(sub_file)):
+            logger.debug(f"Already synced!")
+            continue
+        base_glob = glob.escape(".".join(sub_file.split(".")[0:-2])) + "*" # Glob excluding .pol.srt part of the filename
+        for video_file in glob.iglob(base_glob):
             for video_format in VIDEO_FORMATS:
                 if video_file.endswith(video_format):
-                    logger.debug(f"Found video: {os.path.basename(video_file)}")
+                    logger.info(f"Found video: {os.path.basename(video_file)}")
                     yield video_file, sub_file
 
 
@@ -45,13 +48,9 @@ def sync_subtitles(in_video: str, in_sub: str, out_sub: str):
 
 
 while True:
+    logger.debug("Scanning files.")
     for video, subs in get_file_pairs():
         new_subs = rename_subtitles(subs)
-
         out = sync_subtitles(video, subs, new_subs)
-        logger.info(
-            f"ffsubsync output:\n"
-            f"{out}"
-        )
-
+    logger.debug("Sleeping.")
     time.sleep(configuration.scan_interval)
