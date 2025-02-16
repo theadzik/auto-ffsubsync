@@ -4,7 +4,7 @@ on:
     tags:
       - "*"
   schedule:
-    - cron: "5 33 * * 6"
+    - cron: "33 5 * * 6"
   workflow_dispatch:
 jobs:
   auto-ffsubsync-build:
