@@ -1,8 +1,10 @@
 import glob
-from custom_logger import get_logger
-
-from config import Config
+import os
+import time
 import subprocess
+
+from custom_logger import get_logger
+from config import Config
 
 logger = get_logger(__name__)
 
@@ -10,16 +12,17 @@ configuration = Config()
 
 VIDEO_FORMATS = ["mkv", "mp4", ]
 
+
 def get_file_pairs():
-    for filename in glob.iglob(configuration.root_dir + '/**/*.pol.srt', recursive=True):
-        logger.debug(f"Found sub file: {filename}")
-        base_name = ".".join(filename.split(".")[0:-2])
-        for glob_file in glob.iglob(base_name + "*"):
-            logger.debug(f"Checking if {glob_file} is a video")
+    for sub_file in glob.iglob(configuration.root_dir + '/**/*.pol.srt', recursive=True):
+        logger.debug(f"Found sub file: {os.path.basename(sub_file)}")
+        base_name = ".".join(sub_file.split(".")[0:-2])
+        for video_file in glob.iglob(base_name + "*"):
             for video_format in VIDEO_FORMATS:
-                if glob_file.endswith(video_format):
-                    logger.debug("It is!")
-                    yield glob_file, filename
+                if video_file.endswith(video_format):
+                    logger.debug(f"Found video: {os.path.basename(video_file)}")
+                    yield video_file, sub_file
+
 
 def rename_subtitles(filename: str):
     split_name = filename.split(".")
@@ -27,16 +30,28 @@ def rename_subtitles(filename: str):
     new_name = ".".join(split_name)
     return new_name
 
+
 def sync_subtitles(in_video: str, in_sub: str, out_sub: str):
-    logger.debug(f"in_video: {in_video}\nin_sub: {in_sub}\n out_sub: {out_sub}")
+    logger.debug(
+        f"\nin_video: {os.path.basename(in_video)}"
+        f"\nin_sub: {os.path.basename(in_sub)}"
+        f"\nout_sub: {os.path.basename(out_sub)}"
+    )
     args = ("ffsubsync", in_video, "-i", in_sub, "-o", out_sub)
     popen = subprocess.Popen(args, stdout=subprocess.PIPE)
     popen.wait()
     output = popen.stdout.read()
     return output
 
-for video, subs in get_file_pairs():
-    new_subs = rename_subtitles(subs)
 
-    out = sync_subtitles(video, subs, new_subs)
-    logger.info(f"ffsubsync output:\n{out}")
+while True:
+    for video, subs in get_file_pairs():
+        new_subs = rename_subtitles(subs)
+
+        out = sync_subtitles(video, subs, new_subs)
+        logger.info(
+            f"ffsubsync output:\n"
+            f"{out}"
+        )
+
+    time.sleep(configuration.scan_interval)
