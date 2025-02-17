@@ -1,1 +1,1 @@
-ffsubsync==0.4.27
+ffsubsync==0.4.28
