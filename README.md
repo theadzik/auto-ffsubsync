@@ -10,9 +10,10 @@ It also only works with subtitle files ending with `.pol.srt` because I hardcode
 
 Configuration:
 
-| Env var       | Required | Default   | Description                               |
-|---------------|----------|-----------|-------------------------------------------|
-| MEDIA_ROOT    | Yes      | -         | Path to directory with videos to scan     |
-| LOG_LEVEL     | No       | DEBUG     | Level of logging \( DEBUG \| INFO \)      |
-| SCAN_INTERVAL | No       | 60        | Number of seconds between scans           |
-| FILE_INFIX    | No       | ffsubsync | String added to synced subtitle filenames |
+| Env var           | Required | Default   | Description                                |
+|-------------------|----------|-----------|--------------------------------------------|
+| VIDEO_DIRECTORY   | Yes      | -         | Path to directory with videos to scan      |
+| LOG_LEVEL         | No       | INFO      | Level of logging \( DEBUG \| INFO \)       |
+| SCAN_INTERVAL     | No       | 60        | Number of seconds between scans            |
+| SYNC_MARKER       | No       | ffsubsync | String added to synced subtitles filenames |
+| DELETE_SOURCE_SUB | No       | False     | Remove original subtitles file             |

@@ -63,13 +63,21 @@ def main(config: Config):
     for video_file in video_files:
         for subtitle in find_subtitle_files(video_file):
             if is_subtitle_synced(subtitle, config.sync_marker):
+                logger.debug(f"Already synced: {subtitle}")
                 continue
 
             synced_subtitle = generate_synced_subtitle_path(subtitle, config.sync_marker)
             if synced_subtitle.exists():
+                logger.debug(f"Already synced in another file: {subtitle}")
                 continue
 
             synchronize_subtitles(video_file, subtitle, synced_subtitle)
+            if config.delete_source_sub:
+                try:
+                    subtitle.unlink()
+                    logger.info(f"Deleted original subtitle: {subtitle}")
+                except Exception as e:
+                    logger.error(f"Failed to delete subtitle {subtitle}: {e}")
 
 
 if __name__ == "__main__":

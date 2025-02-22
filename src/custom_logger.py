@@ -9,7 +9,7 @@ def get_logger(name: str) -> logging.Logger:
     logger = logging.getLogger(name)
 
     if not logger.hasHandlers():  # Prevents adding multiple handlers
-        log_level = os.getenv("LOG_LEVEL", "DEBUG").upper()
+        log_level = os.getenv("LOG_LEVEL", "INFO").upper()
         log_level = logging.getLevelName(log_level)  # Convert string to log level
 
         handler = logging.StreamHandler(sys.stdout)
