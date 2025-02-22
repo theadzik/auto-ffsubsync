@@ -1,5 +1,6 @@
 import time
 import subprocess
+import sys
 from pathlib import Path
 
 from custom_logger import get_logger
@@ -37,22 +38,23 @@ def generate_synced_subtitle_path(subtitle_file: Path, sync_marker: str) -> Path
     return subtitle_file.with_stem(f"{subtitle_file.stem}.{sync_marker}")
 
 
-def synchronize_subtitles(video_file: Path, subtitle_file: Path, output_subtitle: Path) -> bytes:
+def synchronize_subtitles(video_file: Path, subtitle_file: Path, output_subtitle: Path) -> int:
     """Synchronize subtitles using ffsubsync."""
     logger.info(
         f"\nVideo: {video_file.name}\nSubtitle: {subtitle_file.name}\nOutput: {output_subtitle.name}"
     )
     try:
-        result = subprocess.run(
+        subprocess.run(
             ["ffsubsync", str(video_file), "-i", str(subtitle_file), "-o", str(output_subtitle)],
-            capture_output=True,
+            stdout=sys.stdout,
+            stderr=sys.stderr,
             text=True,
             check=True
         )
-        return result.stdout.encode()
+        logger.info("Finished syncing subtitles.")
     except subprocess.CalledProcessError as e:
         logger.error(f"Failed to sync subtitles: {e}")
-        return b""
+        return 1
 
 
 def main(config: Config):
@@ -71,9 +73,7 @@ def main(config: Config):
                 logger.debug(f"Already synced in another file: {subtitle}")
                 continue
 
-            output = synchronize_subtitles(video_file, subtitle, synced_subtitle)
-            logger.info(output)
-            logger.debug("Finished sync.")
+            synchronize_subtitles(video_file, subtitle, synced_subtitle)
             if config.delete_source_sub:
                 try:
                     subtitle.unlink()
