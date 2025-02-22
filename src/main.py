@@ -71,7 +71,9 @@ def main(config: Config):
                 logger.debug(f"Already synced in another file: {subtitle}")
                 continue
 
-            synchronize_subtitles(video_file, subtitle, synced_subtitle)
+            output = synchronize_subtitles(video_file, subtitle, synced_subtitle)
+            logger.info(output)
+            logger.debug("Finished sync.")
             if config.delete_source_sub:
                 try:
                     subtitle.unlink()
