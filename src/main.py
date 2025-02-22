@@ -10,21 +10,29 @@ logger = get_logger(__name__)
 
 configuration = Config()
 
-VIDEO_FORMATS = ["mkv", "mp4", ]
+VIDEO_FORMATS = ("*.mkv", "*.mp4",)
 
 
-def get_file_pairs():
-    for sub_file in glob.iglob(configuration.root_dir + '/**/*.pol.srt', recursive=True):
-        logger.debug(f"Found sub file: {os.path.basename(sub_file)}")
-        if os.path.isfile(rename_subtitles(sub_file)):
-            logger.debug(f"Already synced!")
-            continue
-        base_glob = glob.escape(".".join(sub_file.split(".")[0:-2])) + "*" # Glob excluding .pol.srt part of the filename
-        for video_file in glob.iglob(base_glob):
-            for video_format in VIDEO_FORMATS:
-                if video_file.endswith(video_format):
-                    logger.info(f"Found video: {os.path.basename(video_file)}")
-                    yield video_file, sub_file
+def get_video_files() -> list:
+    video_files = []
+    for video_format in VIDEO_FORMATS:
+        video_files.extend(glob.glob(configuration.root_dir + "/**/" + video_format, recursive=True))
+    return video_files
+
+
+def get_matching_subtitles(video_path) -> list:
+    matching_subtitles = []
+    base_name = get_base_file_name(video_path)
+    matching_subtitles.extend(glob.glob(glob.escape(base_name) + "*.srt"))
+    return matching_subtitles
+
+
+def get_base_file_name(file_name: str) -> str:
+    return ".".join(file_name.split(".")[0:-1])
+
+
+def is_synced_subtitles(filename: str) -> bool:
+    return configuration.file_infix in filename
 
 
 def rename_subtitles(filename: str):
@@ -34,7 +42,7 @@ def rename_subtitles(filename: str):
     return new_name
 
 
-def sync_subtitles(in_video: str, in_sub: str, out_sub: str):
+def sync_subtitles(in_video: str, in_sub: str, out_sub: str) -> bytes:
     logger.debug(
         f"\nin_video: {os.path.basename(in_video)}"
         f"\nin_sub: {os.path.basename(in_sub)}"
@@ -47,10 +55,21 @@ def sync_subtitles(in_video: str, in_sub: str, out_sub: str):
     return output
 
 
+def main():
+    videos = get_video_files()
+    for v in videos:
+        subtitle_files = get_matching_subtitles(v)
+        for subs in subtitle_files:
+            if is_synced_subtitles(subs):
+                continue
+            new_subs = rename_subtitles(subs)
+            if os.path.isfile(new_subs):
+                continue
+            sync_subtitles(v, subs, new_subs)
+
+
 while True:
     logger.debug("Scanning files.")
-    for video, subs in get_file_pairs():
-        new_subs = rename_subtitles(subs)
-        out = sync_subtitles(video, subs, new_subs)
+    main()
     logger.debug("Sleeping.")
     time.sleep(configuration.scan_interval)
