@@ -10,41 +10,41 @@ logger = get_logger(__name__)
 VIDEO_FORMATS = (".mkv", ".mp4")
 
 
-def get_video_files(root_dir: Path) -> list[Path]:
-    """Get all video files recursively from the given directory."""
-    return [file for ext in VIDEO_FORMATS for file in root_dir.rglob(f"*{ext}")]
+def find_video_files(video_directory: Path) -> list[Path]:
+    """Recursively find all video files in the given directory."""
+    return [file for ext in VIDEO_FORMATS for file in video_directory.rglob(f"*{ext}")]
 
 
-def get_matching_subtitles(video_path: Path) -> list[Path]:
+def find_subtitle_files(video_file: Path) -> list[Path]:
     """Find subtitle files matching a video, allowing multiple extensions before .srt."""
-    base_name = video_path.with_suffix('')  # Remove only the last extension
+    base_name = video_file.with_suffix('')  # Remove only the last extension
     subtitle_files = []
 
-    for sub_file in video_path.parent.glob("*.srt"):
-        if sub_file.stem.startswith(base_name.stem):  # Match base name (ignoring extensions)
-            subtitle_files.append(sub_file)
+    for subtitle_file in video_file.parent.glob("*.srt"):
+        if subtitle_file.stem.startswith(base_name.stem):  # Match base name (ignoring extensions)
+            subtitle_files.append(subtitle_file)
 
     return subtitle_files
 
 
-def is_synced_subtitles(filename: Path, file_infix: str) -> bool:
+def is_subtitle_synced(subtitle_file: Path, sync_marker: str) -> bool:
     """Check if a subtitle file is already synced."""
-    return file_infix in filename.stem
+    return sync_marker in subtitle_file.stem
 
 
-def rename_subtitles(filename: Path, file_infix: str) -> Path:
-    """Generate a new subtitle filename with the sync infix."""
-    return filename.with_stem(f"{filename.stem}.{file_infix}")
+def generate_synced_subtitle_path(subtitle_file: Path, sync_marker: str) -> Path:
+    """Generate a new subtitle filename with the sync marker."""
+    return subtitle_file.with_stem(f"{subtitle_file.stem}.{sync_marker}")
 
 
-def sync_subtitles(in_video: Path, in_sub: Path, out_sub: Path) -> bytes:
+def synchronize_subtitles(video_file: Path, subtitle_file: Path, output_subtitle: Path) -> bytes:
     """Synchronize subtitles using ffsubsync."""
     logger.debug(
-        f"\nVideo: {in_video.name}\nSubtitle: {in_sub.name}\nOutput: {out_sub.name}"
+        f"\nVideo: {video_file.name}\nSubtitle: {subtitle_file.name}\nOutput: {output_subtitle.name}"
     )
     try:
         result = subprocess.run(
-            ["ffsubsync", str(in_video), "-i", str(in_sub), "-o", str(out_sub)],
+            ["ffsubsync", str(video_file), "-i", str(subtitle_file), "-o", str(output_subtitle)],
             capture_output=True,
             text=True,
             check=True
@@ -56,26 +56,26 @@ def sync_subtitles(in_video: Path, in_sub: Path, out_sub: Path) -> bytes:
 
 
 def main(config: Config):
-    """Main processing loop for finding and syncing subtitles."""
-    root_dir = Path(config.root_dir)
+    """Main processing loop for finding and synchronizing subtitles."""
+    video_directory = Path(config.video_directory)
 
-    videos = get_video_files(root_dir)
-    for video in videos:
-        for sub in get_matching_subtitles(video):
-            if is_synced_subtitles(sub, config.file_infix):
+    video_files = find_video_files(video_directory)
+    for video_file in video_files:
+        for subtitle in find_subtitle_files(video_file):
+            if is_subtitle_synced(subtitle, config.sync_marker):
                 continue
 
-            new_sub = rename_subtitles(sub, config.file_infix)
-            if new_sub.exists():
+            synced_subtitle = generate_synced_subtitle_path(subtitle, config.sync_marker)
+            if synced_subtitle.exists():
                 continue
 
-            sync_subtitles(video, sub, new_sub)
+            synchronize_subtitles(video_file, subtitle, synced_subtitle)
 
 
 if __name__ == "__main__":
     config = Config()
     while True:
-        logger.debug("Scanning files.")
+        logger.debug("Scanning for files.")
         main(config)
         logger.debug("Sleeping.")
         time.sleep(config.scan_interval)
