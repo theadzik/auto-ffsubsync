@@ -39,7 +39,7 @@ def generate_synced_subtitle_path(subtitle_file: Path, sync_marker: str) -> Path
 
 def synchronize_subtitles(video_file: Path, subtitle_file: Path, output_subtitle: Path) -> bytes:
     """Synchronize subtitles using ffsubsync."""
-    logger.debug(
+    logger.info(
         f"\nVideo: {video_file.name}\nSubtitle: {subtitle_file.name}\nOutput: {output_subtitle.name}"
     )
     try:
