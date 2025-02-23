@@ -1,14 +1,13 @@
-import time
 import subprocess
-import sys
+import time
 from pathlib import Path
 
-from custom_logger import get_logger
 from config import Config
+from custom_logger import get_logger
 
 logger = get_logger(__name__)
 
-VIDEO_FORMATS = (".mkv", ".mp4")
+VIDEO_FORMATS = (".mkv", ".mp4", "*.avi")
 
 
 def find_video_files(video_directory: Path) -> list[Path]:
@@ -38,23 +37,29 @@ def generate_synced_subtitle_path(subtitle_file: Path, sync_marker: str) -> Path
     return subtitle_file.with_stem(f"{subtitle_file.stem}.{sync_marker}")
 
 
-def synchronize_subtitles(video_file: Path, subtitle_file: Path, output_subtitle: Path) -> int:
+def synchronize_subtitles(video_file: Path, subtitle_file: Path, output_subtitle: Path) -> None:
     """Synchronize subtitles using ffsubsync."""
     logger.info(
         f"\nVideo: {video_file.name}\nSubtitle: {subtitle_file.name}\nOutput: {output_subtitle.name}"
     )
     try:
-        subprocess.run(
-            ["ffsubsync", str(video_file), "-i", str(subtitle_file), "-o", str(output_subtitle)],
-            stdout=sys.stdout,
-            stderr=sys.stderr,
-            text=True,
-            check=True
-        )
-        logger.info("Finished syncing subtitles.")
+        with subprocess.Popen(
+                ["ffsubsync", str(video_file), "-i", str(subtitle_file), "-o", str(output_subtitle)],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,  # Merge stderr into stdout
+                text=True,
+                bufsize=1
+        ) as process:
+            for line in process.stdout:
+                logger.info(line.replace("\n", ""))  # Fix progress bar issue
+
+        # Check exit status AFTER process completes
+        if process.returncode != 0:
+            raise subprocess.CalledProcessError(process.returncode, process.args)
+
     except subprocess.CalledProcessError as e:
         logger.error(f"Failed to sync subtitles: {e}")
-        return 1
+        raise
 
 
 def main(config: Config):

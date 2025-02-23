@@ -2,7 +2,7 @@ FROM python:3.13
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-    ffmpeg
+    ffmpeg && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
 COPY requirements.txt requirements.txt
