@@ -1,5 +1,7 @@
 # auto-ffsubsync
 
+**This little experiment is no longer maintained. I switched to bazarr**
+
 A service that syncs subtitles with movies using [ffsubsync](https://github.com/smacke/ffsubsync)
 
 It works with automatically downloaded subtitles in Jellyfin by OpenSubtitles plugin.
